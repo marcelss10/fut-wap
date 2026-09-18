@@ -1,0 +1,83 @@
+[
+  {
+    "id": "seed-1",
+    "name": "MARCEL",
+    "number": 10,
+    "color": "preto",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDMARCEL10P",
+    "createdAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "id": "seed-2",
+    "name": "MARCEL",
+    "number": 10,
+    "color": "branco",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDMARCEL10B",
+    "createdAt": "2026-09-01T12:01:00.000Z"
+  },
+  {
+    "id": "seed-3",
+    "name": "JOSE TELLES",
+    "number": 8,
+    "color": "preto",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDJOSE8P",
+    "createdAt": "2026-09-01T12:02:00.000Z"
+  },
+  {
+    "id": "seed-4",
+    "name": "JOSE TELLES",
+    "number": 8,
+    "color": "branco",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDJOSE8B",
+    "createdAt": "2026-09-01T12:03:00.000Z"
+  },
+  {
+    "id": "seed-5",
+    "name": "FELIPE BARBOSA",
+    "number": 9,
+    "color": "preto",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDFELIPE9P",
+    "createdAt": "2026-09-01T12:04:00.000Z"
+  },
+  {
+    "id": "seed-6",
+    "name": "FELIPE BARBOSA",
+    "number": 9,
+    "color": "branco",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDFELIPE9B",
+    "createdAt": "2026-09-01T12:05:00.000Z"
+  },
+  {
+    "id": "seed-7",
+    "name": "CICERO",
+    "number": 7,
+    "color": "branco",
+    "status": "pago",
+    "amount": 89.9,
+    "txid": "SEEDCICERO7B",
+    "createdAt": "2026-09-01T12:06:00.000Z"
+  },
+  {
+    "id": "seed-8",
+    "name": "PAULO",
+    "number": 10,
+    "color": "branco",
+    "status": "rejeitado",
+    "amount": 89.9,
+    "txid": "SEEDPAULO10B",
+    "createdAt": "2026-09-01T12:07:00.000Z",
+    "obs": "Numero 10 branco ja estava reservado para MARCEL. Solicitacao registrada apenas para historico, nao ocupa o numero."
+  }
+]
