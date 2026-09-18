@@ -28,11 +28,14 @@ create index if not exists reservations_group_id_idx
 create index if not exists reservations_status_idx
   on public.reservations (status);
 
--- O mesmo numero pode existir no preto e no branco, mas nao pode haver
--- duas reservas ativas para a mesma cor + numero.
-create unique index if not exists reservations_active_number_unique
-  on public.reservations (color, number)
-  where status in ('pago', 'pendente');
+-- O mesmo numero pode existir no preto e no branco, e cada combinacao
+-- cor+numero pode ter no maximo 2 unidades vendidas (2 pessoas por numero).
+-- Nao usamos mais unique index aqui: o limite de 2 e controlado dentro da
+-- funcao reserve_kits (contagem), pois um unique index so permitiria 1.
+drop index if exists reservations_active_number_unique;
+
+create index if not exists reservations_color_number_idx
+  on public.reservations (color, number);
 
 -- Libera automaticamente uma reserva pendente vencida quando alguem tentar
 -- ocupar o mesmo numero + cor novamente.
@@ -85,6 +88,7 @@ declare
   item jsonb;
   v_number integer;
   v_color text;
+  v_pair record;
   v_now timestamptz := now();
 begin
   if p_name is null or btrim(p_name) = '' then
@@ -137,6 +141,28 @@ begin
 
     if v_color not in ('preto', 'branco') then
       raise exception 'INVALID_COLOR';
+    end if;
+  end loop;
+
+  -- Cada combinacao cor+numero pode ter no maximo 2 unidades ativas
+  -- (pago ou pendente ainda dentro do prazo). Conta o que ja existe no
+  -- banco + o que esta sendo pedido agora, por cor+numero.
+  for v_pair in
+    select distinct value->>'color' as color, (value->>'number')::integer as number
+    from jsonb_array_elements(p_items)
+  loop
+    -- Trava esta combinacao cor+numero durante a transacao, para que duas
+    -- compras simultaneas nao passem ambas pela contagem ao mesmo tempo.
+    perform pg_advisory_xact_lock(hashtext(v_pair.color || ':' || v_pair.number::text));
+
+    if (
+      (select count(*) from public.reservations r
+         where r.color = v_pair.color and r.number = v_pair.number and r.status in ('pago', 'pendente'))
+      +
+      (select count(*) from jsonb_array_elements(p_items) e
+         where e.value->>'color' = v_pair.color and (e.value->>'number')::integer = v_pair.number)
+    ) > 2 then
+      raise exception 'NUMBER_TAKEN';
     end if;
   end loop;
 

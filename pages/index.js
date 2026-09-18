@@ -158,7 +158,7 @@ export default function Home() {
   const [buyerName, setBuyerName] = useState("");
   const [contact, setContact] = useState("");
   const [items, setItems] = useState([{ color: "preto", number: "" }]);
-  const [availability, setAvailability] = useState({ taken: { preto: {}, branco: {} }, price: 89.9 });
+  const [availability, setAvailability] = useState({ taken: { preto: {}, branco: {} }, price: 89.9, maxUnitsPerNumber: 2 });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pixData, setPixData] = useState(null);
@@ -213,7 +213,9 @@ export default function Home() {
 
   const isTaken = (c, n) => {
     if (n === "" || n === null || n === undefined) return false;
-    return Boolean(availability.taken?.[c]?.[Number(n)]);
+    const entry = availability.taken?.[c]?.[Number(n)];
+    const count = entry?.count || 0;
+    return count >= (availability.maxUnitsPerNumber || 2);
   };
 
   const price = Number(availability.price || 89.9);
@@ -309,8 +311,8 @@ export default function Home() {
           <h1>Monte seu Kit Oficial</h1>
           <p>
             Escolha a cor, digite seu nome e numero e veja a simulacao em 360° na propria camisa.
-            Cada pessoa pode escolher ate 2 numeros para si (numeros de 0 a 100). Cada numero
-            pertence a apenas 1 pessoa por cor — e so fica garantido depois que o Pix cair.
+            Cada pessoa pode escolher ate 4 numeros (maximo 2 por cor). Cada combinacao de numero
+            + cor tem no maximo 2 unidades disponiveis — e so ficam garantidas depois que o Pix cair.
           </p>
         </div>
 
@@ -428,9 +430,9 @@ export default function Home() {
                     )}
                     {taken && (
                       <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "#ff8a84" }}>
-                        Numero {it.number} ja esta com outra pessoa nesta cor (pago ou aguardando
-                        pagamento). Cada numero+cor e exclusivo de 1 pessoa — escolha outro numero,
-                        ou tente novamente mais tarde caso o pagamento dela expire.
+                        Numero {it.number} ja atingiu o limite de {availability.maxUnitsPerNumber || 2} unidades
+                        (pagas ou aguardando pagamento) nesta cor — escolha outro numero, ou tente
+                        novamente mais tarde caso algum pagamento pendente expire.
                       </div>
                     )}
                   </div>
@@ -447,10 +449,20 @@ export default function Home() {
                 </summary>
                 <div className="number-grid">
                   {Array.from({ length: 101 }, (_, n) => n).map((n) => {
-                    const st = availability.taken?.[color]?.[n];
-                    const cls = st === "pago" ? "taken" : st === "pendente" ? "pending" : "free";
+                    const entry = availability.taken?.[color]?.[n];
+                    const count = entry?.count || 0;
+                    const max = availability.maxUnitsPerNumber || 2;
+                    let cls = "free";
+                    let label = "disponivel";
+                    if (count >= max) {
+                      cls = entry?.hasPago ? "taken" : "pending";
+                      label = entry?.hasPago ? "esgotado (pago)" : "esgotado (pendente)";
+                    } else if (count > 0) {
+                      cls = "pending";
+                      label = `1 de ${max} vendido/reservado`;
+                    }
                     return (
-                      <div key={n} className={`number-chip ${cls}`} title={st || "disponivel"}>
+                      <div key={n} className={`number-chip ${cls}`} title={label}>
                         {n}
                       </div>
                     );

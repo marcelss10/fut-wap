@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { getAll, isActive, reserveKits } from "../../lib/db";
+import { getAll, isActive, reserveKits, MAX_UNITS_PER_NUMBER } from "../../lib/db";
 import { buildPixPayload } from "../../lib/pix";
 
 const PRICE = Number(process.env.KIT_PRICE || 89.9);
@@ -34,7 +34,6 @@ export default async function handler(req, res) {
       number: Number(it.number),
       color: it.color,
     }));
-    const seen = new Set();
 
     for (const it of normalizedItems) {
       if (!Number.isInteger(it.number) || it.number < 0 || it.number > 100) {
@@ -43,11 +42,6 @@ export default async function handler(req, res) {
       if (it.color !== "preto" && it.color !== "branco") {
         return res.status(400).json({ error: "Cor invalida." });
       }
-      const key = `${it.color}-${it.number}`;
-      if (seen.has(key)) {
-        return res.status(400).json({ error: "Voce selecionou o mesmo numero e cor duas vezes." });
-      }
-      seen.add(key);
     }
 
     const perColorCount = { preto: 0, branco: 0 };
@@ -58,13 +52,16 @@ export default async function handler(req, res) {
 
     // Consulta rapida para dar uma mensagem amigavel antes da tentativa atomica.
     const all = await getAll();
+    const countsInOrder = {};
     for (const it of normalizedItems) {
-      const conflict = all.find(
+      const key = `${it.color}-${it.number}`;
+      countsInOrder[key] = (countsInOrder[key] || 0) + 1;
+      const existingActive = all.filter(
         (r) => r.color === it.color && r.number === it.number && isActive(r)
-      );
-      if (conflict) {
+      ).length;
+      if (existingActive + countsInOrder[key] > MAX_UNITS_PER_NUMBER) {
         return res.status(409).json({
-          error: `O numero ${it.number} (${it.color}) nao esta mais disponivel.`,
+          error: `O numero ${it.number} (${it.color}) ja atingiu o limite de ${MAX_UNITS_PER_NUMBER} unidades vendidas/reservadas.`,
           conflict: { number: it.number, color: it.color },
         });
       }
