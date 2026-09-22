@@ -54,11 +54,15 @@ function StatusPill({ status }) {
   return <span className={`pill ${status}`}>{status}</span>;
 }
 
+const SIZES = ["PP", "P", "M", "G", "GG", "XG"];
+
 function ManualForm({ onCreated }) {
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
   const [color, setColor] = useState("preto");
   const [status, setStatus] = useState("pago");
+  const [shirtSize, setShirtSize] = useState("M");
+  const [shortsSize, setShortsSize] = useState("M");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -74,7 +78,7 @@ function ManualForm({ onCreated }) {
       const res = await fetch("/api/admin/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, number: Number(number), color, status }),
+        body: JSON.stringify({ name, number: Number(number), color, status, shirtSize, shortsSize }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -124,6 +128,26 @@ function ManualForm({ onCreated }) {
             <option value="pago">Pago</option>
             <option value="pendente">Pendente</option>
             <option value="rejeitado">Rejeitado</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>Tam. camisa</label>
+          <select value={shirtSize} onChange={(e) => setShirtSize(e.target.value)}>
+            {SIZES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>Tam. calcao</label>
+          <select value={shortsSize} onChange={(e) => setShortsSize(e.target.value)}>
+            {SIZES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field" />
@@ -265,6 +289,8 @@ export default function Admin() {
                     <th>Nome</th>
                     <th>Numero</th>
                     <th>Cor</th>
+                    <th>Tam. camisa</th>
+                    <th>Tam. calcao</th>
                     <th>Status</th>
                     <th>Valor</th>
                     <th>Contato</th>
@@ -279,6 +305,8 @@ export default function Admin() {
                       <td>{r.name}</td>
                       <td>{r.number}</td>
                       <td style={{ textTransform: "capitalize" }}>{r.color}</td>
+                      <td>{r.shirtSize || "-"}</td>
+                      <td>{r.shortsSize || "-"}</td>
                       <td>
                         <StatusPill status={r.status} />
                       </td>
@@ -311,7 +339,7 @@ export default function Admin() {
                   ))}
                   {reservations.length === 0 && (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: "center", color: "#9a9aa2" }}>
+                      <td colSpan={11} style={{ textAlign: "center", color: "#9a9aa2" }}>
                         Nenhuma reserva ainda.
                       </td>
                     </tr>

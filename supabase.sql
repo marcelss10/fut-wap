@@ -11,13 +11,36 @@ create table if not exists public.reservations (
   number integer not null check (number between 0 and 100),
   color text not null check (color in ('preto', 'branco')),
   status text not null default 'pendente' check (status in ('pago', 'pendente', 'rejeitado', 'cancelado')),
-  amount numeric(10,2) not null default 89.90,
+  amount numeric(10,2) not null default 49.90,
   txid text,
   created_at timestamptz not null default now(),
   updated_at timestamptz,
   expires_at timestamptz,
-  obs text
+  obs text,
+  shirt_size text check (shirt_size in ('PP', 'P', 'M', 'G', 'GG', 'XG')),
+  shorts_size text check (shorts_size in ('PP', 'P', 'M', 'G', 'GG', 'XG'))
 );
+
+-- Caso a tabela ja exista de uma versao anterior, garante as colunas novas.
+alter table public.reservations add column if not exists shirt_size text;
+alter table public.reservations add column if not exists shorts_size text;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'reservations_shirt_size_check'
+  ) then
+    alter table public.reservations
+      add constraint reservations_shirt_size_check
+      check (shirt_size in ('PP', 'P', 'M', 'G', 'GG', 'XG'));
+  end if;
+  if not exists (
+    select 1 from pg_constraint where conname = 'reservations_shorts_size_check'
+  ) then
+    alter table public.reservations
+      add constraint reservations_shorts_size_check
+      check (shorts_size in ('PP', 'P', 'M', 'G', 'GG', 'XG'));
+  end if;
+end $$;
 
 create index if not exists reservations_created_at_idx
   on public.reservations (created_at desc);
@@ -142,6 +165,14 @@ begin
     if v_color not in ('preto', 'branco') then
       raise exception 'INVALID_COLOR';
     end if;
+
+    if coalesce(item->>'shirtSize', '') <> '' and item->>'shirtSize' not in ('PP', 'P', 'M', 'G', 'GG', 'XG') then
+      raise exception 'INVALID_SHIRT_SIZE';
+    end if;
+
+    if coalesce(item->>'shortsSize', '') <> '' and item->>'shortsSize' not in ('PP', 'P', 'M', 'G', 'GG', 'XG') then
+      raise exception 'INVALID_SHORTS_SIZE';
+    end if;
   end loop;
 
   -- Cada combinacao cor+numero pode ter no maximo 2 unidades ativas
@@ -169,7 +200,7 @@ begin
   return query
   insert into public.reservations (
     id, group_id, name, contact, number, color, status,
-    amount, txid, created_at, expires_at
+    amount, txid, created_at, expires_at, shirt_size, shorts_size
   )
   select
     gen_random_uuid(),
@@ -182,7 +213,9 @@ begin
     p_amount,
     left(p_txid, 25),
     v_now,
-    v_now + interval '30 minutes'
+    v_now + interval '30 minutes',
+    nullif(value->>'shirtSize', ''),
+    nullif(value->>'shortsSize', '')
   from jsonb_array_elements(p_items)
   returning *;
 exception

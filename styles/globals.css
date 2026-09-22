@@ -406,7 +406,7 @@ button {
 
 .kit-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
@@ -414,6 +414,11 @@ button {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
+}
+@media (max-width: 640px) {
+  .kit-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .remove-btn {

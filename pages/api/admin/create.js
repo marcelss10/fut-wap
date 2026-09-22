@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Metodo nao permitido" });
   }
 
-  const { name, number, color, status, amount, obs } = req.body || {};
+  const { name, number, color, status, amount, obs, shirtSize, shortsSize } = req.body || {};
   const num = Number(number);
   const finalStatus = status && ["pago", "pendente", "rejeitado", "cancelado"].includes(status) ? status : "pago";
 
@@ -39,6 +39,8 @@ export default async function handler(req, res) {
       createdAt: now.toISOString(),
       expiresAt: finalStatus === "pendente" ? new Date(now.getTime() + 30 * 60 * 1000).toISOString() : null,
       obs: obs || "Criado manualmente pelo admin",
+      shirtSize: ["PP", "P", "M", "G", "GG", "XG"].includes(shirtSize) ? shirtSize : "",
+      shortsSize: ["PP", "P", "M", "G", "GG", "XG"].includes(shortsSize) ? shortsSize : "",
     };
 
     const saved = await createReservation(record);

@@ -5,6 +5,7 @@ import { buildPixPayload } from "../../lib/pix";
 const PRICE = Number(process.env.KIT_PRICE || 49.9);
 const MAX_ITEMS_PER_PERSON = 4;
 const MAX_ITEMS_PER_COLOR = 2;
+const VALID_SIZES = ["PP", "P", "M", "G", "GG", "XG"];
 
 function sanitizeName(name) {
   return String(name || "").trim().slice(0, 30);
@@ -33,6 +34,8 @@ export default async function handler(req, res) {
     const normalizedItems = items.map((it) => ({
       number: Number(it.number),
       color: it.color,
+      shirtSize: String(it.shirtSize || "").toUpperCase().trim(),
+      shortsSize: String(it.shortsSize || "").toUpperCase().trim(),
     }));
 
     for (const it of normalizedItems) {
@@ -41,6 +44,12 @@ export default async function handler(req, res) {
       }
       if (it.color !== "preto" && it.color !== "branco") {
         return res.status(400).json({ error: "Cor invalida." });
+      }
+      if (!VALID_SIZES.includes(it.shirtSize)) {
+        return res.status(400).json({ error: "Escolha o tamanho da camisa (PP, P, M, G, GG ou XG)." });
+      }
+      if (!VALID_SIZES.includes(it.shortsSize)) {
+        return res.status(400).json({ error: "Escolha o tamanho do calcao (PP, P, M, G, GG ou XG)." });
       }
     }
 

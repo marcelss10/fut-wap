@@ -6,6 +6,8 @@ const IMGS = {
   branco: { front: "/img/white_front.png", back: "/img/white_back.png" },
 };
 
+const SIZES = ["PP", "P", "M", "G", "GG", "XG"];
+
 // Posicao (em % da altura/largura da imagem das costas) da area em branco
 // reservada para nome e numero em cada camisa. Ajustado visualmente a
 // partir das imagens reais enviadas (preto_atras.png / branco_atras.png).
@@ -157,7 +159,7 @@ export default function Home() {
   const [color, setColor] = useState("preto");
   const [buyerName, setBuyerName] = useState("");
   const [contact, setContact] = useState("");
-  const [items, setItems] = useState([{ color: "preto", number: "" }]);
+  const [items, setItems] = useState([{ color: "preto", number: "", shirtSize: "M", shortsSize: "M" }]);
   const [availability, setAvailability] = useState({ taken: { preto: {}, branco: {} }, price: 49.9, maxUnitsPerNumber: 2 });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -189,7 +191,7 @@ export default function Home() {
     return () => clearInterval(t);
   }, [pixData]);
 
-  const firstItem = items[0] || { color: "preto", number: "" };
+  const firstItem = items[0] || { color: "preto", number: "", shirtSize: "M", shortsSize: "M" };
 
   const updateItem = (idx, patch) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -204,7 +206,7 @@ export default function Home() {
     if (items.length >= MAX_ITEMS) return;
     // Escolhe automaticamente uma cor que ainda nao atingiu o limite de 2.
     const nextColor = countByColor(items, "preto") < MAX_PER_COLOR ? "preto" : "branco";
-    setItems((prev) => [...prev, { color: nextColor, number: "" }]);
+    setItems((prev) => [...prev, { color: nextColor, number: "", shirtSize: "M", shortsSize: "M" }]);
   };
 
   const removeItem = (idx) => {
@@ -239,6 +241,10 @@ export default function Home() {
         setError(`O numero ${it.number} (${it.color}) ja nao esta disponivel.`);
         return;
       }
+      if (!it.shirtSize || !it.shortsSize) {
+        setError("Escolha o tamanho da camisa e do calcao para cada kit.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -249,7 +255,12 @@ export default function Home() {
         body: JSON.stringify({
           buyerName,
           contact,
-          items: cleanItems.map((it) => ({ number: Number(it.number), color: it.color })),
+          items: cleanItems.map((it) => ({
+            number: Number(it.number),
+            color: it.color,
+            shirtSize: it.shirtSize,
+            shortsSize: it.shortsSize,
+          })),
         }),
       });
       const data = await res.json();
@@ -284,7 +295,7 @@ export default function Home() {
   const closeModal = () => {
     setPixData(null);
     setQrDataUrl("");
-    setItems([{ color: "preto", number: "" }]);
+    setItems([{ color: "preto", number: "", shirtSize: "M", shortsSize: "M" }]);
     setBuyerName("");
     setContact("");
   };
@@ -422,6 +433,32 @@ export default function Home() {
                         }}
                         style={taken ? { borderColor: "#e0554f", color: "#ff8a84" } : {}}
                       />
+                    </div>
+                    <div className="field" style={{ marginBottom: 0 }}>
+                      <label>Tam. camisa</label>
+                      <select
+                        value={it.shirtSize}
+                        onChange={(e) => updateItem(idx, { shirtSize: e.target.value })}
+                      >
+                        {SIZES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field" style={{ marginBottom: 0 }}>
+                      <label>Tam. calcao</label>
+                      <select
+                        value={it.shortsSize}
+                        onChange={(e) => updateItem(idx, { shortsSize: e.target.value })}
+                      >
+                        {SIZES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {items.length > 1 && (
                       <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>
