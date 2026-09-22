@@ -158,7 +158,7 @@ export default function Home() {
   const [buyerName, setBuyerName] = useState("");
   const [contact, setContact] = useState("");
   const [items, setItems] = useState([{ color: "preto", number: "" }]);
-  const [availability, setAvailability] = useState({ taken: { preto: {}, branco: {} }, price: 89.9, maxUnitsPerNumber: 2 });
+  const [availability, setAvailability] = useState({ taken: { preto: {}, branco: {} }, price: 49.9, maxUnitsPerNumber: 2 });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pixData, setPixData] = useState(null);
@@ -218,7 +218,7 @@ export default function Home() {
     return count >= (availability.maxUnitsPerNumber || 2);
   };
 
-  const price = Number(availability.price || 89.9);
+  const price = Number(availability.price || 49.9);
   const total = items.filter((it) => it.number !== "").length * price;
 
   const handleSubmit = async (e) => {

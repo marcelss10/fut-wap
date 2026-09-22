@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       min: 0,
       max: 100,
       maxUnitsPerNumber: MAX_UNITS_PER_NUMBER,
-      price: Number(process.env.KIT_PRICE || 89.9),
+      price: Number(process.env.KIT_PRICE || 49.9),
     });
   } catch (err) {
     console.error(err);

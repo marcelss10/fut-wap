@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       number: num,
       color,
       status: finalStatus,
-      amount: Number(amount) || Number(process.env.KIT_PRICE || 89.9),
+      amount: Number(amount) || Number(process.env.KIT_PRICE || 49.9),
       txid: "ADMIN" + crypto.randomUUID().replace(/-/g, "").slice(0, 15).toUpperCase(),
       createdAt: now.toISOString(),
       expiresAt: finalStatus === "pendente" ? new Date(now.getTime() + 30 * 60 * 1000).toISOString() : null,

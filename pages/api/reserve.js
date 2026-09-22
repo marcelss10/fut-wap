@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { getAll, isActive, reserveKits, MAX_UNITS_PER_NUMBER } from "../../lib/db";
 import { buildPixPayload } from "../../lib/pix";
 
-const PRICE = Number(process.env.KIT_PRICE || 89.9);
+const PRICE = Number(process.env.KIT_PRICE || 49.9);
 const MAX_ITEMS_PER_PERSON = 4;
 const MAX_ITEMS_PER_COLOR = 2;
 
