@@ -8,6 +8,17 @@ const IMGS = {
 
 const SIZES = ["PP", "P", "M", "G", "GG", "XG"];
 
+// Grade oficial de medidas (em centimetros) da camiseta tradicional, usada
+// como referencia visual na tela de edicao de tamanho.
+const SIZE_CHART = [
+  { tam: "PP", largura: 45, altura: 62 },
+  { tam: "P", largura: 48, altura: 65 },
+  { tam: "M", largura: 51, altura: 68 },
+  { tam: "G", largura: 52, altura: 72 },
+  { tam: "GG", largura: 54, altura: 73 },
+  { tam: "XG", largura: 59, altura: 80 },
+];
+
 // Posicao (em % da altura/largura da imagem das costas) da area em branco
 // reservada para nome e numero em cada camisa. Ajustado visualmente a
 // partir das imagens reais enviadas (preto_atras.png / branco_atras.png).
@@ -168,6 +179,136 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
+  // --- Edicao de pedido ja feito (tamanho de camisa/calcao) ---
+  const [editOpen, setEditOpen] = useState(false);
+  const [editStep, setEditStep] = useState("search"); // search | pick | edit
+  const [editSearchName, setEditSearchName] = useState("");
+  const [editMatches, setEditMatches] = useState([]);
+  const [editAllNames, setEditAllNames] = useState([]);
+  const [editSelected, setEditSelected] = useState(null);
+  const [editShirtSize, setEditShirtSize] = useState("M");
+  const [editShortsSize, setEditShortsSize] = useState("M");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+
+  const openEditOrder = () => {
+    setEditOpen(true);
+    setEditStep("search");
+    setEditSearchName("");
+    setEditMatches([]);
+    setEditAllNames([]);
+    setEditSelected(null);
+    setEditError("");
+    setEditSuccess("");
+  };
+
+  const closeEditOrder = () => {
+    setEditOpen(false);
+  };
+
+  const runEditSearch = async (nameOverride) => {
+    const term = (nameOverride ?? editSearchName).trim();
+    setEditError("");
+    setEditSuccess("");
+    if (!term) {
+      setEditError("Digite o nome usado na reserva.");
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/order-lookup?name=${encodeURIComponent(term)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "Erro ao buscar pedido.");
+        return;
+      }
+      if (!data.matches || data.matches.length === 0) {
+        setEditMatches([]);
+        setEditError("Nao encontramos nenhum pedido ativo com esse nome.");
+        return;
+      }
+      setEditMatches(data.matches);
+      setEditStep("pick");
+    } catch (err) {
+      console.error(err);
+      setEditError("Erro de conexao. Tente novamente.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const loadAllEditableNames = async () => {
+    setEditError("");
+    setEditLoading(true);
+    try {
+      const res = await fetch("/api/order-lookup?all=1");
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "Erro ao listar nomes.");
+        return;
+      }
+      setEditAllNames(data.names || []);
+      setEditStep("listAll");
+    } catch (err) {
+      console.error(err);
+      setEditError("Erro de conexao. Tente novamente.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const pickNameFromList = (name) => {
+    setEditSearchName(name);
+    runEditSearch(name);
+  };
+
+  const pickReservationToEdit = (reservation) => {
+    setEditSelected(reservation);
+    setEditShirtSize(reservation.shirtSize || "M");
+    setEditShortsSize(reservation.shortsSize || "M");
+    setEditError("");
+    setEditSuccess("");
+    setEditStep("edit");
+  };
+
+  const saveEditSizes = async () => {
+    if (!editSelected) return;
+    setEditError("");
+    setEditSuccess("");
+    setEditLoading(true);
+    try {
+      const res = await fetch("/api/order-update-size", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editSelected.id,
+          shirtSize: editShirtSize,
+          shortsSize: editShortsSize,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditError(data.error || "Erro ao salvar o novo tamanho.");
+        return;
+      }
+      setEditSuccess("Tamanho atualizado com sucesso!");
+      setEditMatches((prev) =>
+        prev.map((m) =>
+          m.id === editSelected.id
+            ? { ...m, shirtSize: editShirtSize, shortsSize: editShortsSize }
+            : m
+        )
+      );
+      setEditSelected((prev) => (prev ? { ...prev, shirtSize: editShirtSize, shortsSize: editShortsSize } : prev));
+    } catch (err) {
+      console.error(err);
+      setEditError("Erro de conexao. Tente novamente.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const loadAvailability = async () => {
     try {
       const res = await fetch("/api/availability");
@@ -312,9 +453,19 @@ export default function Home() {
             WAAW <small>by Alok · softwaresul corp</small>
           </div>
         </div>
-        <a className="admin-link" href="/admin">
-          Painel Admin
-        </a>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn-primary"
+            style={{ width: "auto", padding: "10px 18px", margin: 0 }}
+            onClick={openEditOrder}
+          >
+            ✏️ EDITAR PEDIDO FEITO
+          </button>
+          <a className="admin-link" href="/admin">
+            Painel Admin
+          </a>
+        </div>
       </div>
 
       <div className="container">
@@ -561,6 +712,172 @@ export default function Home() {
             </button>
             <div>
               <button type="button" className="close-btn" onClick={closeModal}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editOpen && (
+        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && closeEditOrder()}>
+          <div className="modal" style={{ maxWidth: 480, textAlign: "left" }}>
+            <h2 style={{ textAlign: "center" }}>Editar pedido feito</h2>
+            <p className="sub" style={{ textAlign: "center" }}>
+              Altere o tamanho da camisa ou do calcao de um pedido ja realizado.
+            </p>
+
+            {editError && <div className="status-msg error">{editError}</div>}
+            {editSuccess && <div className="status-msg" style={{ color: "#4caf50" }}>{editSuccess}</div>}
+
+            {editStep === "search" && (
+              <>
+                <div className="field">
+                  <label>Digite o nome usado na reserva</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: RICK WEBER"
+                    value={editSearchName}
+                    onChange={(e) => setEditSearchName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && runEditSearch()}
+                  />
+                </div>
+                <button type="button" className="btn-primary" onClick={() => runEditSearch()} disabled={editLoading}>
+                  {editLoading ? "Buscando..." : "Buscar meu pedido"}
+                </button>
+                <button
+                  type="button"
+                  className="close-btn"
+                  style={{ marginTop: 10 }}
+                  onClick={loadAllEditableNames}
+                  disabled={editLoading}
+                >
+                  Nao encontrou seu nome? Ver lista de pedidos
+                </button>
+              </>
+            )}
+
+            {editStep === "listAll" && (
+              <>
+                <label style={{ fontSize: 12, color: "#9a9aa2", marginBottom: 8, display: "block" }}>
+                  Selecione seu nome na lista abaixo
+                </label>
+                <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 10 }}>
+                  {editAllNames.length === 0 && (
+                    <div style={{ fontSize: 13, color: "#9a9aa2" }}>Nenhum pedido editavel encontrado.</div>
+                  )}
+                  {editAllNames.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className="close-btn"
+                      style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 6 }}
+                      onClick={() => pickNameFromList(n)}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="close-btn" onClick={() => setEditStep("search")}>
+                  ← Voltar
+                </button>
+              </>
+            )}
+
+            {editStep === "pick" && (
+              <>
+                <label style={{ fontSize: 12, color: "#9a9aa2", marginBottom: 8, display: "block" }}>
+                  Encontramos {editMatches.length} pedido(s) para "{editSearchName}". Escolha qual deseja editar:
+                </label>
+                <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 10 }}>
+                  {editMatches.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className="close-btn"
+                      style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 6 }}
+                      onClick={() => pickReservationToEdit(m)}
+                    >
+                      {m.name} · Numero {m.number} · {m.color === "preto" ? "Preto" : "Branco"} · Camisa {m.shirtSize || "-"} / Calcao {m.shortsSize || "-"}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="close-btn" onClick={() => setEditStep("search")}>
+                  ← Voltar
+                </button>
+              </>
+            )}
+
+            {editStep === "edit" && editSelected && (
+              <>
+                <div style={{ fontSize: 13, color: "#c9c9d1", marginBottom: 12 }}>
+                  <b>{editSelected.name}</b> · Numero {editSelected.number} · {editSelected.color === "preto" ? "Preto" : "Branco"}
+                </div>
+
+                <div className="kit-row">
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>Tam. camisa</label>
+                    <select value={editShirtSize} onChange={(e) => setEditShirtSize(e.target.value)}>
+                      {SIZES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>Tam. calcao</label>
+                    <select value={editShortsSize} onChange={(e) => setEditShortsSize(e.target.value)}>
+                      {SIZES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <details style={{ marginTop: 10 }}>
+                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#9a9aa2", marginBottom: 6 }}>
+                    Ver tabela de medidas (cm)
+                  </summary>
+                  <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse", marginTop: 6 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: "4px 6px", borderBottom: "1px solid #333" }}>Tam.</th>
+                        <th style={{ textAlign: "left", padding: "4px 6px", borderBottom: "1px solid #333" }}>Largura</th>
+                        <th style={{ textAlign: "left", padding: "4px 6px", borderBottom: "1px solid #333" }}>Altura</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SIZE_CHART.map((row) => (
+                        <tr key={row.tam}>
+                          <td style={{ padding: "4px 6px", fontWeight: 700 }}>{row.tam}</td>
+                          <td style={{ padding: "4px 6px" }}>{row.largura} cm</td>
+                          <td style={{ padding: "4px 6px" }}>{row.altura} cm</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ marginTop: 14 }}
+                  onClick={saveEditSizes}
+                  disabled={editLoading}
+                >
+                  {editLoading ? "Salvando..." : "Salvar novo tamanho"}
+                </button>
+                <button type="button" className="close-btn" style={{ marginTop: 8 }} onClick={() => setEditStep("pick")}>
+                  ← Voltar
+                </button>
+              </>
+            )}
+
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <button type="button" className="close-btn" onClick={closeEditOrder}>
                 Fechar
               </button>
             </div>
