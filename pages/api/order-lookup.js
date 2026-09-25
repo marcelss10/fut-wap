@@ -1,4 +1,4 @@
-import { getAll } from "../../lib/db";
+import { getAll, usingSupabase } from "../../lib/db";
 
 // Nomes de pedidos "seed" antigos (sem tamanho, sem valor cobrado) que nao
 // devem aparecer na busca nem na listagem de auto-atendimento.
@@ -55,7 +55,11 @@ export default async function handler(req, res) {
         names.push(r.name);
       }
       names.sort((a, b) => a.localeCompare(b, "pt-BR"));
-      return res.status(200).json({ names });
+      // "source" ajuda a diagnosticar: se vier "local" em producao, as
+      // variaveis SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao estao
+      // configuradas no ambiente de hospedagem e o app esta usando o
+      // arquivo local (que so tem os pedidos seed, todos excluidos).
+      return res.status(200).json({ names, source: usingSupabase ? "supabase" : "local" });
     }
 
     const query = normalize(req.query.name);
@@ -67,7 +71,7 @@ export default async function handler(req, res) {
       .filter((r) => normalize(r.name).includes(query))
       .map(toClient);
 
-    return res.status(200).json({ matches });
+    return res.status(200).json({ matches, source: usingSupabase ? "supabase" : "local" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro ao consultar pedidos." });

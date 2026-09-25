@@ -225,7 +225,13 @@ export default function Home() {
       }
       if (!data.matches || data.matches.length === 0) {
         setEditMatches([]);
-        setEditError("Nao encontramos nenhum pedido ativo com esse nome.");
+        if (data.source === "local") {
+          setEditError(
+            "Atencao: o site esta usando o arquivo local em vez do Supabase (variaveis SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY nao configuradas no servidor). Configure essas variaveis no seu provedor de hospedagem e faca o redeploy."
+          );
+        } else {
+          setEditError("Nao encontramos nenhum pedido ativo com esse nome.");
+        }
         return;
       }
       setEditMatches(data.matches);
@@ -249,6 +255,11 @@ export default function Home() {
         return;
       }
       setEditAllNames(data.names || []);
+      if (data.source === "local") {
+        setEditError(
+          "Atencao: o site esta usando o arquivo local em vez do Supabase (variaveis SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY nao configuradas no servidor). Configure essas variaveis no seu provedor de hospedagem e faca o redeploy."
+        );
+      }
       setEditStep("listAll");
     } catch (err) {
       console.error(err);
