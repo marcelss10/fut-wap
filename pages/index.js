@@ -349,6 +349,12 @@ function EditOrderModal({ onClose, onSaved }) {
               <summary style={{ cursor: "pointer", fontSize: 12, color: "#9a9aa2", marginBottom: 6 }}>
                 Ver grade de medidas (cm)
               </summary>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/grade-medidas.jpeg"
+                alt="Grade de medidas - tabela de tamanhos"
+                className="size-grid-image"
+              />
               <SizeGridTable />
             </details>
 
