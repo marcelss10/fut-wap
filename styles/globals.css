@@ -559,6 +559,9 @@ button {
   padding: 28px;
   max-width: 420px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   text-align: center;
 }
 .modal h2 {
